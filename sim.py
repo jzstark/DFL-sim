@@ -14,7 +14,7 @@ class Simulation :
         self.ob_interval = ob_interval
         self.time = 0 # global time 
 
-    def add_vehicle(self, vehID, position) -> None:
+    def add_vehicle(self, vehID, position = (0,0)) -> None:
         v : BaseAgent = self.agentType(vehID, self.channel)
         v.set_position(position)
         self.agents[vehID] = v
