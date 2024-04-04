@@ -36,6 +36,9 @@ while step < 10:
         subscription = traci.vehicle.getSubscriptionResults(vid)
         simulation.update_agent_position(
             vid, subscription[tc.VAR_POSITION])
+        
+        simulation.step_async()
+    
     step += 1
 
     for (vid, a) in simulation.agents.items():

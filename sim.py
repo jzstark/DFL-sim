@@ -1,7 +1,21 @@
 
 from base import BaseAgent, Channel
 from typing import Dict
-import numpy as np 
+from scipy.spatial import KDTree
+import numpy as np
+
+class AgentKDTree:
+    def __init__(self, agents : Dict[str, BaseAgent]) -> None:
+        self.agents = agents
+        id_points = [(a.id, a.position) for a in self.agents.values()]
+        self.vid, points = zip(*id_points)
+        self.tree = KDTree(points)
+    
+    def find_neighbors(self, point : tuple[float, float], 
+                       range : float) -> list[str] :
+        indices = self.tree.query_ball_point(point, range)
+        return [self.vid[i] for i in indices]
+
 
 # We use a unified time, controlled by simulator
 
@@ -13,6 +27,7 @@ class Simulation :
         self.channel = chan
         self.ob_interval = ob_interval
         self.time = 0 # global time 
+        self.search_range = 200 #m
 
     def add_vehicle(self, vehID, position = (0,0)) -> None:
         v : BaseAgent = self.agentType(vehID, self.channel)
@@ -36,9 +51,12 @@ class Simulation :
         for a in self.agents.values():
             a.set_time(self.time)
         
+        kdtree = AgentKDTree(self.agents)
+        
         for a in self.agents.values():
             #TODO: find a suitable group of neighbors
-            group : list[BaseAgent] = []
+            neighbors = kdtree.find_neighbors(a.position,  self.search_range)
+            group : list[BaseAgent] = [self.agents[nid] for nid in neighbors if nid != a.id]
             
             # "Compute your local weights iteratively within this step"
             for g in group:
@@ -50,6 +68,8 @@ class Simulation :
             
             # Consensus of data
             a.aggregate()
+        
+        del kdtree
 
         return
     

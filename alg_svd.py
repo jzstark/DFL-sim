@@ -34,6 +34,8 @@ class SimpleAgent(BaseAgent):
     
     def aggregate(self):
         s = 0
+        c = 1
         for d in self.flat_cached_data():
             s += d
-        self.v = sum(s) / len(s)
+            c += 1
+        self.v = s / c

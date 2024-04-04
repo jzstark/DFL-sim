@@ -4,6 +4,7 @@ import sys
 import random
 from queue import PriorityQueue
 import heapq
+from collections import defaultdict
 
 
 class PriorityQueue:
@@ -54,7 +55,7 @@ class BaseAgent():
         self.position : tuple[float, float] = (0, 0)
         # Data Collected from different sources, at different time slot
         # self.cache : Dict[str, PriorityQueue[Message]] = {}
-        self.cache : Dict[str, Message] = {}
+        self.cache : defaultdict[str, Message] = defaultdict(str)
         self.channel = chan
         self.time = 0
         # Compute time : random [0-1] time unit
@@ -65,13 +66,14 @@ class BaseAgent():
 
     
     def set_cache(self, src_id : str,  msg : Message) -> None:
-        queue = self.cache[src_id]
-        queue.push(msg)
+        #queue = self.cache[src_id]
+        #queue.push(msg)
+        self.cache[src_id] = msg
 
     def flat_cached_data(self) :
         data = []
         for msg in self.cache.values():
-            data.add(msg.content)
+            data.append(msg.content)
         return data
     
     def set_time(self, time) :
