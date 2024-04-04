@@ -1,19 +1,39 @@
-from base import BaseComm
+from base import BaseAgent, Message, Channel
+import random
+import math
 
-class AlgSVD(BaseComm) : 
-    def __init__(self, vehIDs: list[str]) -> None:
-        self.data = None  # Row information 
+class AlgSVD(BaseAgent) : 
+    def __init__(self, vehID: str, chan: Channel) -> None:
         self.a = None
         self.x = None
         self.Y = None 
-        super().__init__(vehIDs)
+        super().__init__(vehID, chan)
     
-    def send(self, src: str, dest: list[str]) -> None:
-        return super().send(src, dest)
+    def get_data(self):
+        return (self.a, self.X, self.Y)
     
-    def receive(self, msg, src, dest) -> None:
-        msg  = self.data
-        return super().receive(msg, src, dest)
+    def updateLocalData(self):
+        pass
     
-    def process(self):
-        
+
+class SimpleAgent(BaseAgent):
+    def __init__(self, vehID: str, chan: Channel) -> None:
+        super().__init__(vehID, chan) 
+        self.v : float = 0.
+        self.old_v: float = 0
+    
+    def get_data(self) -> Message:
+        return self.v
+    
+    def get_diff_data(self):
+        return self.old_v
+    
+    def updateLocalData(self):
+        self.old_v = self.v 
+        self.v += random.random()
+    
+    def aggregate(self):
+        s = 0
+        for d in self.flat_cached_data():
+            s += d
+        self.v = sum(s) / len(s)

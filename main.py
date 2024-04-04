@@ -13,9 +13,16 @@ step = 0
 
 traci.simulationStep()
 vehIDList = traci.vehicle.getIDList()
+
+
+
+
 for vehID in vehIDList:
     traci.vehicle.subscribe(vehID, (tc.POSITION_2D, tc.VAR_POSITION, tc.VAR_SPEED,
                                         tc.VAR_ROAD_ID, tc.VAR_LANEPOSITION))
+
+traci.simulationStep()
+
 
 while step < 10:
     traci.simulationStep()
