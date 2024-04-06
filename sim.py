@@ -53,25 +53,31 @@ class Simulation :
         
         kdtree = AgentKDTree(self.agents)
         
+        #Each agent go ahead with local update
+        #TODO: This step is wrong! There is time gap!
         for a in self.agents.values():
+            a.localComputeUntil(self.ob_interval)
+            
+        for a in self.agents.values():
+            print("============step for agent %s at time %f============" % (a.id, a.time))
             #TODO: find a suitable group of neighbors
             neighbors = kdtree.find_neighbors(a.position,  self.search_range)
             group : list[BaseAgent] = [self.agents[nid] for nid in neighbors if nid != a.id]
-            
-            # "Compute your local weights iteratively within this step"
-            for g in group:
-                g.localComputeUntil(self.ob_interval)
             
             # "send your local weights to me"          
             for g in group:
                 g.send(g.get_data(), a)
             
-            # Consensus of data
+            # Consensus of received data
             a.aggregate()
         
         del kdtree
 
         return
+
+    def test_acc(self):
+        acc = [a.test() for a in self.agents.values()]
+        return np.mean(acc), np.std(acc)
     
 """
  #def _check_sender(self, num) -> list[int]:

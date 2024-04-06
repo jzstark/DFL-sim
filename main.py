@@ -8,9 +8,11 @@ import traci.constants as tc
 from sim import Simulation
 from alg_svd import SimpleAgent
 from base import Channel
+from simpleFLAgent import SimpleDNNAgent
 
 simple_chan = Channel()
-simulation = Simulation([], SimpleAgent, simple_chan, ob_interval=1)
+#simulation = Simulation([], SimpleAgent, simple_chan, ob_interval=1)
+simulation = Simulation([], SimpleDNNAgent, simple_chan, ob_interval=1)
 
 sumoBinary = "/usr/bin/sumo"
 sumoCmd = [sumoBinary, "-c", "manhattan/data/manhattan.sumocfg"]
@@ -37,11 +39,11 @@ while step < 10:
         simulation.update_agent_position(
             vid, subscription[tc.VAR_POSITION])
         
-        simulation.step_async()
+    simulation.step_async()
+    #if step % 2 == 0:
+    print(simulation.test_acc())
     
     step += 1
-
-    for (vid, a) in simulation.agents.items():
-        print(vid, a.position)
+    simulation.set_time(step)
 
 traci.close()

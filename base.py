@@ -92,14 +92,15 @@ class BaseAgent():
     def get_data(self):
         pass
 
-    def get_diff_data(self):
-        pass
-
-    def aggregate(self):
+    # Aggregate a list of parameters and then update the data of myself
+    def aggregate(self, data_list) -> None:
         pass
             
     def updateLocalData(self):
         pass 
+
+    def test(self) -> float:
+        pass
 
     #NOTE: assume timelen is normally 1 or several "time unit"
     def localComputeUntil(self, timelen):

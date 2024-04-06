@@ -25,9 +25,6 @@ class SimpleAgent(BaseAgent):
     def get_data(self) -> Message:
         return self.v
     
-    def get_diff_data(self):
-        return self.old_v
-    
     def updateLocalData(self):
         self.old_v = self.v 
         self.v += random.random()
@@ -39,3 +36,7 @@ class SimpleAgent(BaseAgent):
             s += d
             c += 1
         self.v = s / c
+
+    def test(self):
+        return self.v
+    
