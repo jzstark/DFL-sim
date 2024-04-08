@@ -66,8 +66,8 @@ class Simulation :
             
             # "send your local weights to me"          
             for g in group:
-                g.send(g.get_data(), a)
-            
+                g.send(g.get_comm_data(), a)
+             
             # Consensus of received data
             a.aggregate()
         

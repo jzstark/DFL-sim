@@ -58,6 +58,8 @@ class BaseAgent():
         self.cache : defaultdict[str, Message] = defaultdict(str)
         self.channel = chan
         self.time = 0
+        # TODO: could lead to potential bug 
+        self.data_change = None
         # Compute time : random [0-1] time unit
         
     
@@ -92,10 +94,15 @@ class BaseAgent():
     def get_data(self):
         pass
 
+    # Data for communication
+    def get_comm_data(self):
+        pass
+
     # Aggregate a list of parameters and then update the data of myself
     def aggregate(self, data_list) -> None:
         pass
-            
+    
+    # return data
     def updateLocalData(self):
         pass 
 
@@ -105,10 +112,13 @@ class BaseAgent():
     #NOTE: assume timelen is normally 1 or several "time unit"
     def localComputeUntil(self, timelen):
         start_time = 0
-        while (start_time < timelen):
-            self.updateLocalData()
-            #TODO: update start_time with some computing time
-            start_time += random.random()
+        #while (start_time < timelen):
+        #    self.updateLocalData()
+        #    #TODO: update start_time with some computing time
+        #    start_time += random.random()
+        change = self.updateLocalData()
+        #TODO: merge multiple changes of data
+        self.data_change = change
 
 
     # def duplicateMsg(self, ms : list[Message]):

@@ -10,8 +10,10 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Subset
 
 import numpy as np
+import copy
+from collections import OrderedDict
 
-device = torch.device("cuda")
+device = torch.device("cpu")
 batch_size = 64
 test_batch_size = 1000
 learning_rate = 0.0001
@@ -59,7 +61,6 @@ class SimpleDNNAgent(BaseAgent):
         super().__init__(vehID, chan) 
         self.model = Net().to(device)
         self.optimizer = optim.Adadelta(self.model.parameters(), lr=learning_rate)
-        self.old_weight = None
 
         #HACK!
         #subset_indices = [400 *  SimpleDNNAgent._id_counter, 
@@ -74,8 +75,6 @@ class SimpleDNNAgent(BaseAgent):
         cuda_kwargs  = {'num_workers': 1,
                        'pin_memory': True,
                        'shuffle': True}
-        train_kwargs.update(cuda_kwargs)
-        test_kwargs.update(cuda_kwargs)
 
         self.train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
         self.test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
@@ -86,7 +85,21 @@ class SimpleDNNAgent(BaseAgent):
     def get_data(self):
         return self.model.state_dict()
     
+
+    def get_comm_data(self):
+        return self.data_change
+    
+    # return n - m
+    def _sd_diff_sd(self, oldsd, newsd) -> OrderedDict:
+        # assume the two dnn are of the same network architecture
+        sdd = copy.deepcopy(oldsd)
+        for name in sdd.keys():
+            sdd[name] = newsd[name] - oldsd[name]
+        return sdd 
+
+
     def updateLocalData(self):
+        old_data = self.get_data()
         self.model.train()
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data, target = data.to(device), target.to(device)
@@ -96,17 +109,26 @@ class SimpleDNNAgent(BaseAgent):
             loss.backward()
             self.optimizer.step()
         print("training for one epoch in vehicle #%s" % self.id)
+        return self._sd_diff_sd(old_data, self.get_data())
     
 
     def aggregate(self):
         # aggregate list of parameters and update mine
         datalist = self.flat_cached_data() # state_dicts 
         if datalist == []: return
+        self.test()
         with torch.no_grad():
             for name, param in self.model.named_parameters():
                 layer_params = [sd[name].cpu().numpy() for sd in datalist]
-                avg = np.mean(layer_params, axis=0)
-                param.data.copy_(torch.tensor(avg).to(device))
+                grad = np.mean(layer_params, axis=0)
+                param.copy_(param + torch.tensor(grad).to(device))
+                #if name == 'fc2.bias':
+                #    for p in layer_params:
+                #        print(p)
+                #    print("fuck!")
+                #    print(avg)
+                #    print(self.model.state_dict()[name])
+        self.test()
         return
         
 
