@@ -13,7 +13,7 @@ import numpy as np
 import copy
 from collections import OrderedDict
 
-device = torch.device("cpu")
+device = torch.device("cuda")
 batch_size = 64
 test_batch_size = 1000
 learning_rate = 0.0001

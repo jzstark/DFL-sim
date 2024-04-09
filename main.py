@@ -6,7 +6,7 @@ import libsumo as traci
 import traci.constants as tc
 
 from sim import Simulation
-from alg_svd import SimpleAgent
+from svdAgent import SimpleAgent
 from base import Channel
 from simpleFLAgent import SimpleDNNAgent
 
