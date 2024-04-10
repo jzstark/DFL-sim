@@ -1,18 +1,22 @@
 import os
 import sys
+import pickle
+import matplotlib.pyplot as plt
+
+
 if 'SUMO_HOME' in os.environ:
     sys.path.append(os.path.join(os.environ['SUMO_HOME'], 'tools'))
 import libsumo as traci
 import traci.constants as tc
 
 from sim import Simulation
-from svdAgent import SimpleAgent
+from svdAgent import SVDAgent
 from base import Channel
 from simpleFLAgent import SimpleDNNAgent
 
 simple_chan = Channel()
 #simulation = Simulation([], SimpleAgent, simple_chan, ob_interval=1)
-simulation = Simulation([], SimpleDNNAgent, simple_chan, ob_interval=1)
+simulation = Simulation([], SVDAgent, simple_chan, ob_interval=1)
 
 sumoBinary = "/usr/bin/sumo"
 sumoCmd = [sumoBinary, "-c", "manhattan/data/manhattan.sumocfg"]
@@ -30,7 +34,9 @@ for vehID in vehIDList:
     # Output format: {66: (201.6, 891.7949078900516)}
     simulation.add_vehicle(vehID)
 
-while step < 10:
+means = []
+stds  = []
+while step < 1000:
     traci.simulationStep()
     # print(step, traci.simulation.getTime(), traci.simulation.getCurrentTime())
     # print(traci.vehicle.getIDList())
@@ -40,10 +46,38 @@ while step < 10:
             vid, subscription[tc.VAR_POSITION])
         
     simulation.step_async()
-    #if step % 2 == 0:
-    print(simulation.test_acc())
+    if step % 5 == 0:
+        mu, std = simulation.test_svd()
+        print(mu, std)
+        means.append(mu)
+        stds.append(std)
     
     step += 1
     simulation.set_time(step)
 
 traci.close()
+
+
+plt.errorbar(range(len(means)), means, yerr=stds, capsize=5, ecolor='red', 
+             linestyle='-', marker='o', color='blue', label='Average with Std Dev')
+
+# Adding labels and title for clarity
+plt.xlabel('Iterations')
+plt.ylabel('Cosine distances to original matrix')
+plt.title('Decentralized SVD on MovieLens-100K dataset')
+plt.savefig('test.png')
+
+
+with open('mean.pkl', 'wb') as f:
+    pickle.dump(means, f)
+
+with open('std.pkl', 'wb') as f:
+    pickle.dump(stds, f)
+
+"""
+with open('mean.pkl', 'wb') as f:
+    means = pickle.load(means, f)
+
+with open('std.pkl', 'wb') as f:
+    stds = pickle.load(stds, f)
+"""

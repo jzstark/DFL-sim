@@ -3,6 +3,7 @@ from base import BaseAgent, Channel
 from typing import Dict
 from scipy.spatial import KDTree
 import numpy as np
+from svdAgent import load_movielens_matrix, cos_similarity
 
 class AgentKDTree:
     def __init__(self, agents : Dict[str, BaseAgent]) -> None:
@@ -59,7 +60,7 @@ class Simulation :
             a.localComputeUntil(self.ob_interval)
             
         for a in self.agents.values():
-            print("============step for agent %s at time %f============" % (a.id, a.time))
+            # print("============step for agent %s at time %f============" % (a.id, a.time))
             #TODO: find a suitable group of neighbors
             neighbors = kdtree.find_neighbors(a.position,  self.search_range)
             group : list[BaseAgent] = [self.agents[nid] for nid in neighbors if nid != a.id]
@@ -75,9 +76,26 @@ class Simulation :
 
         return
 
-    def test_acc(self):
+    def test_acc_dnn(self):
         acc = [a.test() for a in self.agents.values()]
         return np.mean(acc), np.std(acc)
+    
+
+    def test_svd(self):
+        mat = load_movielens_matrix()
+        x_stack = []
+        for a in self.agents.values():
+            x, _ = a.get_data()
+            x_stack.append(x)
+        xx = np.vstack(x_stack)
+        
+        err = []
+        for a in self.agents.values():
+            _, y = a.get_data()
+            e = cos_similarity(mat, np.dot(xx, np.transpose(y)))
+            err.append(e)
+        return np.mean(err), np.std(err)
+
     
 """
  #def _check_sender(self, num) -> list[int]:
