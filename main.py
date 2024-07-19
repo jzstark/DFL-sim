@@ -15,8 +15,8 @@ from base import Channel
 from simpleFLAgent import SimpleDNNAgent
 
 simple_chan = Channel()
-#simulation = Simulation([], SimpleAgent, simple_chan, ob_interval=1)
-simulation = Simulation([], SVDAgent, simple_chan, ob_interval=1)
+simulation = Simulation([], SimpleDNNAgent, simple_chan, ob_interval=1)
+#simulation = Simulation([], SVDAgent, simple_chan, ob_interval=1)
 
 sumoBinary = "/usr/bin/sumo"
 sumoCmd = [sumoBinary, "-c", "manhattan/data/manhattan.sumocfg"]
@@ -36,7 +36,7 @@ for vehID in vehIDList:
 
 means = []
 stds  = []
-while step < 1000:
+while step < 50:
     traci.simulationStep()
     # print(step, traci.simulation.getTime(), traci.simulation.getCurrentTime())
     # print(traci.vehicle.getIDList())
@@ -46,8 +46,9 @@ while step < 1000:
             vid, subscription[tc.VAR_POSITION])
         
     simulation.step_async()
-    if step % 5 == 0:
-        mu, std = simulation.test_svd()
+    if step % 2 == 0:
+        #mu, std = simulation.test_svd()
+        mu, std = simulation.test_acc_dnn()
         print(mu, std)
         means.append(mu)
         stds.append(std)
