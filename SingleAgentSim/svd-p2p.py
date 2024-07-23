@@ -71,7 +71,7 @@ X = np.random.uniform(0., 1., (m, k))
 Y = np.random.uniform(0., 1., (n, k))
 
 
-for iter in range(100):
+for iter in range(2000):
 
     Adot = A.copy()
     Xdot = X.copy()
