@@ -23,12 +23,13 @@ class AgentKDTree:
 """
 
 
-if 'SUMO_HOME' in os.environ:
-    sys.path.append(os.path.join(os.environ['SUMO_HOME'], 'tools'))
+if 'SUMO_HOME' not in os.environ:
+    os.environ['SUMO_HOME'] = '/usr/share/sumo/'
+sys.path.append(os.path.join(os.environ['SUMO_HOME'], 'tools'))
 import libsumo as traci
 import traci.constants as tc
 
-sumoBinary = "/usr/bin/sumo"
+sumoBinary = "/usr/share/sumo/bin/sumo"
 #sumoCmd = [sumoBinary, "-c", "maps/manhattan/data/manhattan.sumocfg"]
 sumoCmd = [sumoBinary, "-c", "maps/berlin/berlin.sumocfg"]
 
@@ -105,6 +106,8 @@ for step in range(T):
         results[1][0, step ] = approximate_length(neighbors[1][step - 1], neighbors[1][step], tolerance = 0)
         results[1][1, step ] = approximate_length(neighbors[1][step - 1], neighbors[1][step], tolerance = 1)
         results[1][2, step ] = approximate_length(neighbors[1][step - 1], neighbors[1][step], tolerance = 2)
+
+traci.close()
 
 print(results)
 
