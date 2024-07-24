@@ -2,6 +2,13 @@ import numpy as np
 import pandas as pd
 from scipy.linalg import svd, diagsvd
 from scipy.sparse import csr_matrix
+import matplotlib.pyplot as plt
+
+import pickle
+
+# Set global font size
+plt.rcParams.update({'font.size': 14})
+
 
 class AdamOptimizer:
     def __init__(self, lr=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
@@ -31,64 +38,124 @@ class AdamOptimizer:
         return params
 
 
-# Load Movielens dataset
-url = "http://files.grouplens.org/datasets/movielens/ml-100k/u.data"
-columns = ['user_id', 'item_id', 'rating', 'timestamp']
-data = pd.read_csv(url, sep='\t', names=columns)
+def dataset_movielens_10K():
 
-# Create a user-item matrix
-num_users = data['user_id'].nunique()
-num_items = data['item_id'].nunique()
+    # Load Movielens dataset
+    # url = "http://files.grouplens.org/datasets/movielens/ml-100k/u.data"
+    url = "../datasets/MovieLens-100K/u.data"
+    columns = ['user_id', 'item_id', 'rating', 'timestamp']
+    data = pd.read_csv(url, sep='\t', names=columns)
 
-assert(num_users <= num_items)
+    # Create a user-item matrix
+    num_users = data['user_id'].nunique()
+    num_items = data['item_id'].nunique()
 
-#ratings_matrix = csr_matrix((data['rating'], (data['user_id'] - 1, data['item_id'] - 1)), shape=(num_users, num_items))
-user_item_matrix = data.pivot(index='user_id', columns='item_id', values='rating')
-user_item_matrix = user_item_matrix.fillna(0)
-ratings_matrix = user_item_matrix.to_numpy()
+    assert(num_users <= num_items)
 
-# Simulate the partitioning of the matrix across 4 nodes
-num_nodes = 1
-cols_per_node = num_items // num_nodes
-A = [ratings_matrix[:,i*cols_per_node:(i+1)*cols_per_node] for i in range(num_nodes)]
-##HACK!!!!!! Each node contains the same number of columns
-#num_items = cols_per_node * num_nodes
-#X = ratings_matrix[:, :num_items]
-A = A[0]
+    #ratings_matrix = csr_matrix((data['rating'], (data['user_id'] - 1, data['item_id'] - 1)), shape=(num_users, num_items))
+    user_item_matrix = data.pivot(index='user_id', columns='item_id', values='rating')
+    user_item_matrix = user_item_matrix.fillna(0)
+    ratings_matrix = user_item_matrix.to_numpy()
+
+    return ratings_matrix
+
 
 # Target: find X of shape m*k and Y of shape n * k so that XY^T is close to A
 # k <= min(m, n)
+def baseline(A, learning_rate = 0.01, delta_k = 0, T=10):
 
-learning_rate = 0.01
-m = num_users
-n = num_items
-k = m
+    accuracy = [0] * T 
+    m = A.shape[0]
+    n = A.shape[1]
+    assert(m <= n)
+    k = m - delta_k 
 
-optimizer1 = AdamOptimizer(lr=learning_rate)
-optimizer2 = AdamOptimizer(lr=learning_rate)
+    X = np.random.uniform(0., 1., (m, k))
+    Y = np.random.uniform(0., 1., (n, k))
 
-X = np.random.uniform(0., 1., (m, k))
-Y = np.random.uniform(0., 1., (n, k))
+    for iter in range(T):
+        Adot = A.copy()
+        Xdot = X.copy()
+        Ydot = Y.copy()
+
+        for i in range(k):
+            err = Adot - np.outer(X[:, i], Y[:, i])
+            Xdot[:, i] = X[:, i] + learning_rate * np.dot(err, Y[:, i])
+            Ydot[:, i] = Y[:, i] + learning_rate * np.dot(np.transpose(err), X[:, i])
+            Adot = Adot - np.outer(X[:, i], Y[:, i])
+
+        X = Xdot
+        Y = Ydot
+        diff = A - np.dot(X, np.transpose(Y))
+        accuracy[iter] = np.linalg.norm(diff) # l2-norm: ∥a−b∥_2 
+
+        print("Round #", iter, ": ", accuracy[iter])
+
+    return accuracy
 
 
-for iter in range(2000):
+def our_method(A, learning_rate = 0.01, delta_k = 0, T=10):
 
-    Adot = A.copy()
-    Xdot = X.copy()
-    Ydot = Y.copy()
+    accuracy = [0] * T 
+    m = A.shape[0]
+    n = A.shape[1]
+    assert(m <= n)
+    k = m - delta_k 
 
-    for i in range(k):
-        err = Adot - np.outer(X[:, i], Y[:, i])
-        #Xdot[:, i] = X[:, i] + learning_rate * np.dot(err, Y[:, i])
-        #Ydot[:, i] = Y[:, i] + learning_rate * np.dot(np.transpose(err), X[:, i])
-        Xdot[:, i] = optimizer1.update(X[:, i], np.dot(err, Y[:, i]))
-        Ydot[:, i] = optimizer2.update(Y[:, i], np.dot(np.transpose(err), X[:, i]))
-        Adot = Adot - np.outer(X[:, i], Y[:, i])
+    optimizer1 = AdamOptimizer(lr=learning_rate)
+    optimizer2 = AdamOptimizer(lr=learning_rate)
 
-    X = Xdot
-    Y = Ydot
+    X = np.random.uniform(0., 1., (m, k))
+    Y = np.random.uniform(0., 1., (n, k))
 
-    diff = A - np.dot(X, np.transpose(Y))
+    for iter in range(T):
+        Adot = A.copy()
+        Xdot = X.copy()
+        Ydot = Y.copy()
 
-    print("Round#", iter, ": ", np.linalg.norm(diff)) # l2-norm: ∥a−b∥_2  
+        for i in range(k):
+            err = Adot - np.outer(X[:, i], Y[:, i])
+            #Xdot[:, i] = X[:, i] + learning_rate * np.dot(err, Y[:, i])
+            #Ydot[:, i] = Y[:, i] + learning_rate * np.dot(np.transpose(err), X[:, i])
+            Xdot[:, i] = optimizer1.update(X[:, i], np.dot(err, Y[:, i]))
+            Ydot[:, i] = optimizer2.update(Y[:, i], np.dot(np.transpose(err), X[:, i]))
+            Adot = Adot - np.outer(X[:, i], Y[:, i])
+
+        X = Xdot
+        Y = Ydot
+        diff = A - np.dot(X, np.transpose(Y))
+        accuracy[iter] = np.linalg.norm(diff) # l2-norm: ∥a−b∥_2 
+
+        print("Round #", iter, ": ", accuracy[iter])
+
+    return accuracy
+
+
+
+def exp01(cached=False):
+    A = dataset_movielens_10K()
+    T = 5
+    acc = np.zeros([3, T])
+    if (not cached):
+        acc[0] = our_method(A, learning_rate=0.01,  delta_k = 0, T=T)
+        #acc[1] = our_method(A, learning_rate=0.001, delta_k = 0, T=T)
+        acc[2] = baseline(A, learning_rate=0.00001,  delta_k = 0, T=T)
+        with open('svd-p2p-exp01.pkl', 'wb') as file:
+            pickle.dump(acc, file)
+    else:
+        with open('svd-p2p-exp01.pkl', 'rb') as file:
+            acc = pickle.load(file)
+
+    fig, ax = plt.subplots(figsize=(9, 4))
+
+    ax.plot(list(range(T)), acc[0], label="Our method (lr = 0.01)", linestyle='-')
+    #ax.plot(list(range(T)), acc[1], label="Our method (lr = 0.001)", linestyle='--')
+    ax.plot(list(range(T)), acc[2], label="Baseline (lr = 0.0001)", linestyle='-.')
+    ax.legend()
+    ax.set_ylabel("Accuracy")
+    ax.set_xlabel("Iterations")
     
+    plt.show()
+
+
+exp01(True)
