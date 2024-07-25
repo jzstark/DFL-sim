@@ -115,10 +115,14 @@ def our_method(A, learning_rate = 0.01, delta_k = 0, T=10):
 
         for i in range(k):
             err = Adot - np.outer(X[:, i], Y[:, i])
-            #Xdot[:, i] = X[:, i] + learning_rate * np.dot(err, Y[:, i])
-            #Ydot[:, i] = Y[:, i] + learning_rate * np.dot(np.transpose(err), X[:, i])
-            Xdot[:, i] = optimizer1.update(X[:, i], np.dot(err, Y[:, i]))
-            Ydot[:, i] = optimizer2.update(Y[:, i], np.dot(np.transpose(err), X[:, i]))
+            if (iter <= 1):
+                Xdot[:, i] = X[:, i] + learning_rate * 0.01 * np.dot(err, Y[:, i])
+                Ydot[:, i] = Y[:, i] + learning_rate * 0.01 * np.dot(np.transpose(err), X[:, i])
+                optimizer1.update(X[:, i], np.dot(err, Y[:, i]))
+                optimizer2.update(Y[:, i], np.dot(np.transpose(err), X[:, i]))
+            else:
+                Xdot[:, i] = optimizer1.update(X[:, i], np.dot(err, Y[:, i]))
+                Ydot[:, i] = optimizer2.update(Y[:, i], np.dot(np.transpose(err), X[:, i]))
             Adot = Adot - np.outer(X[:, i], Y[:, i])
 
         X = Xdot
@@ -134,12 +138,12 @@ def our_method(A, learning_rate = 0.01, delta_k = 0, T=10):
 
 def exp01(cached=False):
     A = dataset_movielens_10K()
-    T = 5
+    T = 100
     acc = np.zeros([3, T])
     if (not cached):
-        acc[0] = our_method(A, learning_rate=0.01,  delta_k = 0, T=T)
-        #acc[1] = our_method(A, learning_rate=0.001, delta_k = 0, T=T)
         acc[2] = baseline(A, learning_rate=0.00001,  delta_k = 0, T=T)
+        acc[0] = our_method(A, learning_rate=0.01,  delta_k = 0, T=T)
+        acc[1] = our_method(A, learning_rate=0.005, delta_k = 0, T=T)
         with open('svd-p2p-exp01.pkl', 'wb') as file:
             pickle.dump(acc, file)
     else:
@@ -149,7 +153,7 @@ def exp01(cached=False):
     fig, ax = plt.subplots(figsize=(9, 4))
 
     ax.plot(list(range(T)), acc[0], label="Our method (lr = 0.01)", linestyle='-')
-    #ax.plot(list(range(T)), acc[1], label="Our method (lr = 0.001)", linestyle='--')
+    ax.plot(list(range(T)), acc[1], label="Our method (lr = 0.001)", linestyle='--')
     ax.plot(list(range(T)), acc[2], label="Baseline (lr = 0.0001)", linestyle='-.')
     ax.legend()
     ax.set_ylabel("Accuracy")
@@ -158,4 +162,36 @@ def exp01(cached=False):
     plt.show()
 
 
-exp01(True)
+def exp02(cached=False):
+    A = dataset_movielens_10K()
+    T = 200
+    acc = np.zeros([4, T])
+    if (not cached):
+        acc[0] = our_method(A, learning_rate=0.01,  delta_k = 0, T=T)
+        acc[1] = our_method(A, learning_rate=0.01,  delta_k = 1, T=T)
+        acc[2] = our_method(A, learning_rate=0.01,  delta_k = 2, T=T)
+        acc[3] = our_method(A, learning_rate=0.01,  delta_k = 3, T=T)
+        with open('svd-p2p-exp02.pkl', 'wb') as file:
+            pickle.dump(acc, file)
+    else:
+        with open('svd-p2p-exp02.pkl', 'rb') as file:
+            acc = pickle.load(file)
+
+    fig, ax = plt.subplots(figsize=(9, 4))
+
+    ax.plot(list(range(T)), acc[0], label="Our method (lr = 0.01, k=0)", linestyle='-')
+    ax.plot(list(range(T)), acc[1], label="Our method (lr = 0.01, k=1)", linestyle='--')
+    ax.plot(list(range(T)), acc[2], label="Our method (lr = 0.01, k=2)", linestyle='-.')
+    ax.plot(list(range(T)), acc[3], label="Our method (lr = 0.01, k=3)", linestyle='dotted')
+
+    ax.legend()
+    ax.set_ylabel("Accuracy")
+    ax.set_xlabel("Iterations")
+    
+    plt.show()
+
+
+#exp01()
+A = dataset_movielens_10K()
+T = 40
+our_method(A, learning_rate=0.001,  delta_k = 0, T=T)

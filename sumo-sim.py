@@ -84,8 +84,8 @@ for step in range(T):
         else:
             pos_dict[vid] = subscription[tc.VAR_POSITION]
     
-    neighbors_of_0 = [vid for vid in vehIDList if distance(pos_dict[vehIDList[0]], pos_dict[vid]) <= radius]
-    neighbors_of_1 = [vid for vid in vehIDList if distance(pos_dict[vehIDList[10]], pos_dict[vid]) <= radius]
+    neighbors_of_0 = [vid for vid in vehIDList if distance(pos_dict[vehIDList[1]], pos_dict[vid]) <= radius]
+    neighbors_of_1 = [vid for vid in vehIDList if distance(pos_dict[vehIDList[9]], pos_dict[vid]) <= radius]
 
     neighbors[0].append(neighbors_of_0)
     neighbors[1].append(neighbors_of_1)
