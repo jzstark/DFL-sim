@@ -60,6 +60,32 @@ def dataset_movielens_10K():
     return ratings_matrix
 
 
+def dataset_movielens_1M():
+    # Load Movielens dataset
+    # url = "http://files.grouplens.org/datasets/movielens/ml-100k/u.data"
+    url = "../datasets/MovieLens-1M/"
+    ratings = pd.read_csv(url+'ratings.dat',
+                        delimiter='::',
+                        engine='python',
+                        names=['user_id', 'movie_id', 'rating', 'timestamp'])
+    # Load movies
+    movies = pd.read_csv(url+'movies.dat',
+                        delimiter='::',
+                        engine='python',
+                        encoding='ISO-8859-1',
+                        names=['movie_id', 'title', 'genres'])
+    # Load users
+    users = pd.read_csv(url+'users.dat',
+                        delimiter='::',
+                        engine='python',
+                        names=['user_id', 'gender', 'age', 'occupation', 'zip'])
+    # Create the user-item interaction matrix
+    user_item_matrix = ratings.pivot(index='user_id', columns='movie_id', values='rating')
+    # Fill missing values with 0 (or another placeholder if preferred)
+    user_item_matrix = user_item_matrix.fillna(0)
+    return user_item_matrix
+
+
 # Target: find X of shape m*k and Y of shape n * k so that XY^T is close to A
 # k <= min(m, n)
 def baseline(A, learning_rate = 0.01, delta_k = 0, T=10):
@@ -144,10 +170,10 @@ def exp01(cached=False):
         acc[2] = baseline(A, learning_rate=0.00001,  delta_k = 0, T=T)
         acc[0] = our_method(A, learning_rate=0.01,  delta_k = 0, T=T)
         acc[1] = our_method(A, learning_rate=0.005, delta_k = 0, T=T)
-        with open('svd-p2p-exp01.pkl', 'wb') as file:
+        with open('svd-baseline-exp01.pkl', 'wb') as file:
             pickle.dump(acc, file)
     else:
-        with open('svd-p2p-exp01.pkl', 'rb') as file:
+        with open('svd-baseline-exp01.pkl', 'rb') as file:
             acc = pickle.load(file)
 
     fig, ax = plt.subplots(figsize=(9, 4))
@@ -171,10 +197,10 @@ def exp02(cached=False):
         acc[1] = our_method(A, learning_rate=0.01,  delta_k = 1, T=T)
         acc[2] = our_method(A, learning_rate=0.01,  delta_k = 2, T=T)
         acc[3] = our_method(A, learning_rate=0.01,  delta_k = 3, T=T)
-        with open('svd-p2p-exp02.pkl', 'wb') as file:
+        with open('svd-baseline-exp02.pkl', 'wb') as file:
             pickle.dump(acc, file)
     else:
-        with open('svd-p2p-exp02.pkl', 'rb') as file:
+        with open('svd-baseline-exp02.pkl', 'rb') as file:
             acc = pickle.load(file)
 
     fig, ax = plt.subplots(figsize=(9, 4))
