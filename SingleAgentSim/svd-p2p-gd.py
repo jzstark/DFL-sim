@@ -7,6 +7,8 @@ import random
 
 import pickle
 
+import cProfile
+
 # Set global font size
 plt.rcParams.update({'font.size': 14})
 
@@ -76,13 +78,15 @@ def update(Y, xi, Ai, learning_rate=0.00001):
     Ai = Ai.copy()
     k = Y.shape[1]
     for l in range(k):
-        xl = np.reshape(xi[:,l],[-1,1])
-        yl = np.reshape(Y[:,l],[-1,1])
+        xl = xi[:,l:l+1]
+        yl = Y[:,l:l+1]
         err = Ai - np.matmul(xl, np.transpose(yl))
         xl_new = xl + (learning_rate * np.matmul(err, yl))
         yl_new = yl + (learning_rate * np.matmul(np.transpose(err), xl))
-        xi[:,l] = np.reshape(xl_new, [-1])
-        Y[:,l] = np.reshape(yl_new, [-1])
+        #xi[:,l:l+1] = np.reshape(xl_new, [-1])
+        #Y[:,l:l+1] = np.reshape(yl_new, [-1])
+        xi[:,l:l+1] = xl_new
+        Y[:,l:l+1] = yl_new
         Ai = Ai - np.matmul(xl_new,np.transpose(yl_new))
     return Y, xi
 
@@ -136,6 +140,7 @@ def eval_save(iters, num_agents=4, dataset_name='10K', k_fix = 0, neigh_num_fix 
     except Exception as e:
         print(f"Caught an exception in evaluation: {e}")
 
+"""
 eval_save(100, num_agents=4,  dataset_name='10K', k_fix=0, neigh_num_fix=0)
 eval_save(100, num_agents=6,  dataset_name='10K', k_fix=0, neigh_num_fix=0)
 eval_save(100, num_agents=8,  dataset_name='10K', k_fix=0, neigh_num_fix=0)
@@ -219,5 +224,17 @@ eval_save(100, num_agents=4,  dataset_name='1M', k_fix=20, neigh_num_fix=2)
 eval_save(100, num_agents=6,  dataset_name='1M', k_fix=20, neigh_num_fix=2)
 eval_save(100, num_agents=8,  dataset_name='1M', k_fix=20, neigh_num_fix=2)
 #eval_save(100, num_agents=10, dataset_name='1M', k_fix=20, neigh_num_fix=2)
+"""
 
-#eval_save(3, num_agents=10, dataset_name='1M', k_fix=20, neigh_num_fix=2)
+eval_save(100, num_agents=6,  dataset_name='10K', k_fix=50, neigh_num_fix=0)
+eval_save(100, num_agents=6,  dataset_name='10K', k_fix=100, neigh_num_fix=0)
+eval_save(100, num_agents=6,  dataset_name='10K', k_fix=150, neigh_num_fix=0)
+eval_save(100, num_agents=6,  dataset_name='10K', k_fix=200, neigh_num_fix=0)
+
+eval_save(100, num_agents=8,  dataset_name='10K', k_fix=50, neigh_num_fix=0)
+eval_save(100, num_agents=8,  dataset_name='10K', k_fix=100, neigh_num_fix=0)
+eval_save(100, num_agents=8,  dataset_name='10K', k_fix=150, neigh_num_fix=0)
+eval_save(100, num_agents=8,  dataset_name='10K', k_fix=200, neigh_num_fix=0)
+
+
+#cProfile.run('eval_save(1, num_agents=10, dataset_name="1M", k_fix=20, neigh_num_fix=2)')
